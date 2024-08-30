@@ -49,7 +49,7 @@ use_default = st.sidebar.checkbox("Use default assistants", value=True)
 if use_default:
     # Use your private API key to fetch the list of assistants
     private_client = openai
-    private_client.api_key = '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'
+    private_client.api_key = st.secrets["openai"]["api_key"]
     
     try:
         my_assistants = private_client.beta.assistants.list(order="desc", limit="20")
