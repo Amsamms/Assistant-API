@@ -66,7 +66,7 @@ This is a Streamlit-based web application that allows users to interact with var
 ## Notes
 
 - Ensure your API key has the necessary permissions to access the OpenAI services.
-- The application uses the `gpt-4-1106-preview` model by default but can be configured to use other available models.
+- The application uses the `gpt-4-o` model by default but can be configured to use other available models.
 
 ## License
 
