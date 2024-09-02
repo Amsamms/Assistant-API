@@ -43,7 +43,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # Sidebar selection for using default or user assistants
-use_default = st.sidebar.checkbox("Use default assistants", value=True)
+use_default = st.sidebar.checkbox("Use default assistants", value=False, disabled=True)
 
 # Fetch the list of assistants using the appropriate API key
 if use_default:
