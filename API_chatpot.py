@@ -1,4 +1,4 @@
-import openai
+from openai import OpenAI, OpenAIError, AuthenticationError, BadRequestError
 import streamlit as st
 import time
 
@@ -15,16 +15,18 @@ if not st.session_state.openai_key:
     st.stop()
 
 # Initialize OpenAI client with the provided API key
-client = openai
-client.api_key = st.session_state.openai_key
+client = OpenAI(api_key=st.session_state.openai_key)
 
 # Validate the user-provided API key by making a harmless API call
 try:
     client.models.list()
-except openai.error.InvalidRequestError:
-    st.sidebar.error("Invalid API Key or request. Please enter a valid OpenAI API Key.")
+except AuthenticationError:
+    st.sidebar.error("Invalid API Key. Please enter a valid OpenAI API Key.")
     st.stop()
-except Exception as e:
+except BadRequestError:
+    st.sidebar.error("Invalid request. Please check your API key and request parameters.")
+    st.stop()
+except OpenAIError as e:
     st.sidebar.error(f"An error occurred: {str(e)}")
     st.stop()
 
@@ -48,13 +50,12 @@ use_default = st.sidebar.checkbox("Use default assistants", value=False, disable
 # Fetch the list of assistants using the appropriate API key
 if use_default:
     # Use your private API key to fetch the list of assistants
-    private_client = openai
-    private_client.api_key = st.secrets["openai"]["api_key"]
+    private_client = OpenAI(api_key=st.secrets["openai"]["api_key"])
     
     try:
         my_assistants = private_client.beta.assistants.list(order="desc", limit="20")
         st.session_state.assistants_list = {data.name: data.id for data in my_assistants.data}
-    except Exception as e:
+    except OpenAIError as e:
         st.sidebar.error(f"Failed to retrieve assistants with the default API key: {str(e)}")
         st.stop()
 else:
@@ -62,7 +63,7 @@ else:
     try:
         my_assistants = client.beta.assistants.list(order="desc", limit="20")
         st.session_state.assistants_list = {data.name: data.id for data in my_assistants.data}
-    except Exception as e:
+    except OpenAIError as e:
         st.sidebar.error(f"Failed to retrieve assistants: {str(e)}")
         st.stop()
 
