@@ -1,9 +1,15 @@
-import openai
+from openai import OpenAI, OpenAIError, AuthenticationError, BadRequestError
 import streamlit as st
 import time
 
 # Page configuration - must be the first Streamlit command
 st.set_page_config(page_title="Assistant API", page_icon=":speech_balloon:")
+
+def show_error(message: str) -> None:
+    if hasattr(st.sidebar, "error"):
+        st.sidebar.error(message)
+    else:
+        st.error(message)
 
 # Sidebar configuration
 st.sidebar.header("Configuration")
@@ -11,21 +17,23 @@ st.session_state.openai_key = st.sidebar.text_input("Enter Your OpenAI API Key",
 
 # Ensure the app only runs if an API key is provided
 if not st.session_state.openai_key:
-    st.sidebar.error("Please enter a valid OpenAI API Key to proceed.")
+    show_error("Please enter a valid OpenAI API Key to proceed.")
     st.stop()
 
 # Initialize OpenAI client with the provided API key
-client = openai
-client.api_key = st.session_state.openai_key
+client = OpenAI(api_key=st.session_state.openai_key)
 
 # Validate the user-provided API key by making a harmless API call
 try:
     client.models.list()
-except openai.error.InvalidRequestError:
-    st.sidebar.error("Invalid API Key or request. Please enter a valid OpenAI API Key.")
+except AuthenticationError:
+    show_error("Invalid API Key. Please enter a valid OpenAI API Key.")
     st.stop()
-except Exception as e:
-    st.sidebar.error(f"An error occurred: {str(e)}")
+except BadRequestError:
+    show_error("Invalid request. Please check your API key and request parameters.")
+    st.stop()
+except OpenAIError as e:
+    show_error(f"An error occurred: {str(e)}")
     st.stop()
 
 # Initialize session state variables if they don't exist
@@ -48,22 +56,21 @@ use_default = st.sidebar.checkbox("Use default assistants", value=False, disable
 # Fetch the list of assistants using the appropriate API key
 if use_default:
     # Use your private API key to fetch the list of assistants
-    private_client = openai
-    private_client.api_key = st.secrets["openai"]["api_key"]
+    private_client = OpenAI(api_key=st.secrets["openai"]["api_key"])
     
     try:
         my_assistants = private_client.beta.assistants.list(order="desc", limit="20")
         st.session_state.assistants_list = {data.name: data.id for data in my_assistants.data}
-    except Exception as e:
-        st.sidebar.error(f"Failed to retrieve assistants with the default API key: {str(e)}")
+    except OpenAIError as e:
+        show_error(f"Failed to retrieve assistants with the default API key: {str(e)}")
         st.stop()
 else:
     # Use the user-provided API key to fetch the list of assistants
     try:
         my_assistants = client.beta.assistants.list(order="desc", limit="20")
         st.session_state.assistants_list = {data.name: data.id for data in my_assistants.data}
-    except Exception as e:
-        st.sidebar.error(f"Failed to retrieve assistants: {str(e)}")
+    except OpenAIError as e:
+        show_error(f"Failed to retrieve assistants: {str(e)}")
         st.stop()
 
 if st.session_state.assistants_list:
